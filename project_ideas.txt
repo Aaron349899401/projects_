@@ -1,0 +1,15 @@
+🥈 2. Reinforcement Learning Agent That Learns to Play a Game
+Not just training a model — building the environment + agent.
+Game ideas
+- Snake
+- Flappy Bird
+- Connect Four
+- 2048
+What you implement
+- The game environment
+- The RL algorithm (Q‑learning, Deep Q‑Network, etc.)
+- Training loop
+- Visualization of learning progress
+Why Waterloo loves it
+- Shows math maturity
+- Shows ML fundamentals

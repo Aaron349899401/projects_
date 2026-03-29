@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stats — OhioSearch</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">[ dark ]</button>
+
+  <header class="results-header">
+    <a href="/" class="logo-small">OhioSearch</a>
+    <div class="header-right">
+      <a href="/stats" class="nav-link">stats</a>
+    </div>
+  </header>
+
+  <main class="stats-wrap">
+    <h2>index stats</h2>
+
+    <div class="stats-grid">
+      <div class="stats-card">
+        <span class="stats-value">{{ total_docs }}</span>
+        <span class="stats-label">Pages indexed</span>
+      </div>
+      <div class="stats-card">
+        <span class="stats-value">{{ total_terms }}</span>
+        <span class="stats-label">Unique terms</span>
+      </div>
+      <div class="stats-card">
+        <span class="stats-value">{{ total_postings }}</span>
+        <span class="stats-label">Total postings</span>
+      </div>
+      <div class="stats-card">
+        <span class="stats-value">{{ avg_doc_length }}</span>
+        <span class="stats-label">Avg tokens / page</span>
+      </div>
+    </div>
+
+    <p class="stats-section-title">Top 30 terms</p>
+    <div class="top-terms">
+      {% for term, count in top_terms %}
+      <span class="term-tag">{{ term }} <span style="opacity:.5">{{ count }}</span></span>
+      {% endfor %}
+    </div>
+  </main>
+
+  <script>
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') applyDark();
+    function applyDark() {
+      document.body.classList.add('dark');
+      document.getElementById('theme-btn').textContent = '[ light ]';
+    }
+    function applyLight() {
+      document.body.classList.remove('dark');
+      document.getElementById('theme-btn').textContent = '[ dark ]';
+    }
+    function toggleTheme() {
+      if (document.body.classList.contains('dark')) {
+        applyLight(); localStorage.setItem('theme', 'light');
+      } else {
+        applyDark(); localStorage.setItem('theme', 'dark');
+      }
+    }
+  </script>
+</body>
+</html>

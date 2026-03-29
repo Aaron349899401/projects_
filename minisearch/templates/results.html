@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ query }} — OhioSearch</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">[ dark ]</button>
+
+  <header class="results-header">
+    <a href="/" class="logo-small">OhioSearch</a>
+
+    <div class="search-wrap">
+        <form action="/search" method="get" class="search-form search-form--compact" autocomplete="off">
+        <input
+            type="text"
+            name="q"
+            id="search-input"
+            value="{{ query }}"
+            oninput="onInput(this.value)"
+            onkeydown="onKey(event)"
+        >
+        <button type="submit">Search</button>
+        </form>
+        <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <a href="/stats" class="nav-link">stats</a>
+    </header>
+
+  <main class="results-wrap">
+    <p class="result-count">
+      {{ results|length }} result{{ 's' if results|length != 1 }} for
+      <strong>{{ query }}</strong>
+    </p>
+
+    {% if results %}
+      {% for r in results %}
+      <div class="result-card">
+        <a class="result-url" href="{{ r.url }}">{{ r.url }}</a>
+        <a class="result-title" href="{{ r.url }}">{{ r.title | highlight(query) | safe }}</a>
+        <p class="result-snippet">{{ r.snippet | highlight(query) | safe }}</p>
+        <span class="result-score">score: {{ r.score }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="no-results">
+        <p>No results found for <strong>{{ query }}</strong>.</p>
+        <p>Try different keywords or crawl more pages.</p>
+      </div>
+    {% endif %}
+  </main>
+
+  <script>
+    // ── Theme ──────────────────────────────────────────────────────────────
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') applyDark();
+
+    function applyDark() {
+      document.body.classList.add('dark');
+      document.getElementById('theme-btn').textContent = '[ light ]';
+    }
+    function applyLight() {
+      document.body.classList.remove('dark');
+      document.getElementById('theme-btn').textContent = '[ dark ]';
+    }
+    function toggleTheme() {
+      if (document.body.classList.contains('dark')) {
+        applyLight(); localStorage.setItem('theme', 'light');
+      } else {
+        applyDark();  localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // ── Save to history ────────────────────────────────────────────────────
+    const q = "{{ query }}";
+    if (q) {
+      let h = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+      h = h.filter(x => x !== q);
+      h.unshift(q);
+      localStorage.setItem('searchHistory', JSON.stringify(h.slice(0, 8)));
+    }
+
+    // ── Suggestions ────────────────────────────────────────────────────────
+    let activeIdx = -1;
+    let debounceTimer;
+
+    function onInput(val) {
+      clearTimeout(debounceTimer);
+      if (val.trim().length < 2) { closeSuggestions(); return; }
+      debounceTimer = setTimeout(() => fetchSuggestions(val.trim()), 180);
+    }
+
+    async function fetchSuggestions(q) {
+      try {
+        const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        const items = (data.results || []).slice(0, 5).map(r => r.title);
+        renderSuggestions(items);
+      } catch(e) { closeSuggestions(); }
+    }
+
+    function renderSuggestions(items) {
+      const box = document.getElementById('suggestions');
+      if (!items.length) { closeSuggestions(); return; }
+      box.innerHTML = items.map((t, i) =>
+        `<div class="suggest-item" data-idx="${i}" onmousedown="pickSuggestion('${t.replace(/'/g,"\\'")}')">
+          <span class="suggest-icon">→</span>${t.slice(0, 60)}
+        </div>`
+      ).join('');
+      box.classList.add('open');
+      activeIdx = -1;
+    }
+
+    function closeSuggestions() {
+      document.getElementById('suggestions').classList.remove('open');
+      activeIdx = -1;
+    }
+
+    function pickSuggestion(title) {
+      const words = title.split(' ').slice(0, 3).join(' ');
+      document.getElementById('search-input').value = words;
+      closeSuggestions();
+      document.querySelector('.search-form').submit();
+    }
+
+    function onKey(e) {
+      const items = document.querySelectorAll('.suggest-item');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = Math.min(activeIdx + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = Math.max(activeIdx - 1, -1);
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+      } else if (e.key === 'Escape') {
+        closeSuggestions();
+      }
+    }
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.search-wrap')) closeSuggestions();
+    });
+  </script>
+</body>
+</html>

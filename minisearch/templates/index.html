@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OhioSearch</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">[ dark ]</button>
+
+  <div class="home-wrap">
+    <h1 class="logo">OhioSearch</h1>
+    <p class="tagline">A search engine built from scratch</p>
+
+    <div class="search-wrap">
+      <form action="/search" method="get" class="search-form" autocomplete="off">
+        <input
+          type="text"
+          name="q"
+          id="search-input"
+          placeholder="Search the web..."
+          autofocus
+          oninput="onInput(this.value)"
+          onkeydown="onKey(event)"
+        >
+        <button type="submit">Search</button>
+      </form>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <!-- Search history -->
+    <div class="history-wrap" id="history-wrap" style="display:none">
+      <span class="history-label">recent:</span>
+    </div>
+  </div>
+
+  <script>
+    // ── Theme ──────────────────────────────────────────────────────────────
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') applyDark();
+
+    function applyDark() {
+      document.body.classList.add('dark');
+      document.getElementById('theme-btn').textContent = '[ light ]';
+    }
+    function applyLight() {
+      document.body.classList.remove('dark');
+      document.getElementById('theme-btn').textContent = '[ dark ]';
+    }
+    function toggleTheme() {
+      if (document.body.classList.contains('dark')) {
+        applyLight(); localStorage.setItem('theme', 'light');
+      } else {
+        applyDark();  localStorage.setItem('theme', 'dark');
+      }
+    }
+
+    // ── Search history ─────────────────────────────────────────────────────
+    function getHistory() {
+      return JSON.parse(localStorage.getItem('searchHistory') || '[]');
+    }
+    function addHistory(q) {
+      let h = getHistory().filter(x => x !== q);
+      h.unshift(q);
+      localStorage.setItem('searchHistory', JSON.stringify(h.slice(0, 8)));
+    }
+    function renderHistory() {
+      const h = getHistory();
+      const wrap = document.getElementById('history-wrap');
+      if (!h.length) return;
+      wrap.style.display = 'flex';
+      // clear old tags (keep the label)
+      [...wrap.querySelectorAll('.history-tag')].forEach(t => t.remove());
+      h.forEach(q => {
+        const btn = document.createElement('button');
+        btn.className = 'history-tag';
+        btn.textContent = q;
+        btn.onclick = () => { window.location = '/search?q=' + encodeURIComponent(q); };
+        wrap.appendChild(btn);
+      });
+    }
+    renderHistory();
+
+    // Save history on form submit
+    document.querySelector('.search-form').addEventListener('submit', () => {
+      const q = document.getElementById('search-input').value.trim();
+      if (q) addHistory(q);
+    });
+
+    // ── Suggestions ────────────────────────────────────────────────────────
+    let activeIdx = -1;
+    let currentSuggestions = [];
+    let debounceTimer;
+
+    function onInput(val) {
+      clearTimeout(debounceTimer);
+      if (val.trim().length < 2) { closeSuggestions(); return; }
+      debounceTimer = setTimeout(() => fetchSuggestions(val.trim()), 180);
+    }
+
+    async function fetchSuggestions(q) {
+      try {
+        const res = await fetch('/api/search?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        currentSuggestions = (data.results || []).slice(0, 5).map(r => r.title);
+        renderSuggestions(currentSuggestions);
+      } catch(e) { closeSuggestions(); }
+    }
+
+    function renderSuggestions(items) {
+      const box = document.getElementById('suggestions');
+      if (!items.length) { closeSuggestions(); return; }
+      box.innerHTML = items.map((t, i) =>
+        `<div class="suggest-item" data-idx="${i}" onmousedown="pickSuggestion('${t.replace(/'/g,"\\'")}')">
+          <span class="suggest-icon">→</span>${t.slice(0, 60)}
+        </div>`
+      ).join('');
+      box.classList.add('open');
+      activeIdx = -1;
+    }
+
+    function closeSuggestions() {
+      document.getElementById('suggestions').classList.remove('open');
+      activeIdx = -1;
+    }
+
+    function pickSuggestion(title) {
+      const input = document.getElementById('search-input');
+      // use first two meaningful words as the query
+      const words = title.split(' ').slice(0, 3).join(' ');
+      input.value = words;
+      closeSuggestions();
+      input.closest('form').submit();
+    }
+
+    function onKey(e) {
+      const items = document.querySelectorAll('.suggest-item');
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = Math.min(activeIdx + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = Math.max(activeIdx - 1, -1);
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+      } else if (e.key === 'Escape') {
+        closeSuggestions();
+      }
+    }
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.search-wrap')) closeSuggestions();
+    });
+  </script>
+</body>
+</html>
