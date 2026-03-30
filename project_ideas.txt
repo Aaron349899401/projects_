@@ -1,4 +1,24 @@
-🥈 2. Reinforcement Learning Agent That Learns to Play a Game
+                🥇 1. Build Your Own Search Engine (Mini‑Google)
+This is by far the most impressive project you can build without spending a cent.
+What you build
+- A web crawler that collects pages
+- An inverted index (core of search engines)
+- A ranking algorithm (TF‑IDF or BM25)
+- A query parser
+- A simple search UI
+Why Waterloo loves it
+- Shows mastery of data structures
+- Shows systems design
+- Shows algorithmic thinking
+- Shows you can build something complex from scratch
+Why it costs $0
+- You crawl public websites
+- You store data locally
+- You write everything yourself
+This is the single strongest project you can do at your level.
+_____________________________________________________________________________
+
+                🥈 2. Reinforcement Learning Agent That Learns to Play a Game
 Not just training a model — building the environment + agent.
 Game ideas
 - Snake
@@ -13,3 +33,26 @@ What you implement
 Why Waterloo loves it
 - Shows math maturity
 - Shows ML fundamentals
+- Shows experimentation and iteration
+- Shows you can build both the environment and the agent
+Cost
+- $0 — everything is Python + NumPy + maybe PyTorch (free)
+This is the kind of project that makes reviewers go “oh damn.”
+_____________________________________________________________________________
+
+                🥉 3. Build Your Own Programming Language (Tiny but Real)
+This is the most “CS‑core” project you can do.
+What you build
+- A lexer (tokenizer)
+- A parser (builds an AST)
+- An interpreter (executes code)
+- Optional: compile to Python bytecode
+Why Waterloo loves it
+- Shows deep understanding of how computers work
+- Shows you can handle abstract concepts
+- Shows you’re not afraid of hard CS
+- Very few high schoolers attempt this
+Cost
+- $0 — pure code, pure brainpower
+This project screams “future systems engineer.”
+_____________________________________________________________________________
