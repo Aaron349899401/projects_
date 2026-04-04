@@ -2,6 +2,7 @@ import { PokemonColor, PokemonType } from '../common/types';
 
 export interface IPokemonType {
   nextFrame(): void;
+  index?: number;
 
   // Special methods for actions
   canSwipe: boolean;
@@ -240,9 +241,16 @@ export class WalkRightState implements IState {
   }
 
   nextFrame(): FrameResult {
+    // Line-up mode override
+    if ((window as any).lineUpMode && typeof this.pokemon.index === 'number') {
+      this.pokemon.positionLeft(50 + this.pokemon.index * 80);
+      this.pokemon.positionBottom(100);
+      return FrameResult.stateContinue;
+    }
+
     this.idleCounter++;
     this.pokemon.positionLeft(
-      this.pokemon.left + this.pokemon.speed * this.speedMultiplier,
+      this.pokemon.left + this.pokemon.speed * this.speedMultiplier * 0.3,
     );
 
     // Random chance to stop in the middle
@@ -277,9 +285,16 @@ export class WalkLeftState implements IState {
   }
 
   nextFrame(): FrameResult {
+    // Line-up mode override
+    if ((window as any).lineUpMode && typeof this.pokemon.index === 'number') {
+      this.pokemon.positionLeft(50 + this.pokemon.index * 80);
+      this.pokemon.positionBottom(100);
+      return FrameResult.stateContinue;
+    }
+
     this.idleCounter++;
     this.pokemon.positionLeft(
-      this.pokemon.left - this.pokemon.speed * this.speedMultiplier,
+      this.pokemon.left - this.pokemon.speed * this.speedMultiplier * 0.3,
     );
 
     // Random chance to stop in the middle
@@ -329,6 +344,13 @@ export class ChaseState implements IState {
   }
 
   nextFrame(): FrameResult {
+    // Line-up mode override
+    if ((window as any).lineUpMode && typeof this.pokemon.index === 'number') {
+      this.pokemon.positionLeft(50 + this.pokemon.index * 80);
+      this.pokemon.positionBottom(100);
+      return FrameResult.stateContinue;
+    }
+
     if (this.ballState.paused) {
       return FrameResult.stateCancel; // Ball is already caught
     }

@@ -441,6 +441,21 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   );
 
+  let lineUpMode = false;
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('vscode-pokemon.lineUp', () => {
+      lineUpMode = !lineUpMode;
+
+      if (PokemonPanel.currentPanel) {
+        PokemonPanel.currentPanel.getWebview().postMessage({
+          type: 'lineUpMode',
+          value: lineUpMode,
+        });
+      }
+    }),
+  );
+
   spawnPokemonStatusBar = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100,

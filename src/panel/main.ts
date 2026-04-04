@@ -20,6 +20,15 @@ import {
 import { PokemonElementState, PokemonPanelState } from './states';
 import { getRandomPokemonConfig } from '../common/pokemon-data';
 
+window.addEventListener('message', (event) => {
+  /* this is part of my changes*/
+  const msg = event.data;
+
+  if (msg.type === 'lineUpMode') {
+    (window as any).lineUpMode = msg.value;
+  }
+});
+
 /* This is how the VS Code API can be invoked from the panel */
 declare global {
   interface VscodeStateApi {
@@ -113,9 +122,12 @@ function startAnimations(
         command: 'info',
       });
     });
-    pokemon.nextFrame();
+    allPokemon.pokemonCollection.forEach((p, i) => {
+      p.pokemon.index = i; // assign index for line-up mode
+      p.pokemon.nextFrame(); // update movement
+    });
     saveState(stateApi);
-  }, 100);
+  }, 200);
 }
 
 function addPokemonToPanel(

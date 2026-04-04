@@ -144,6 +144,11 @@
                 "command": "vscode-pokemon.change-pokemon-language",
                 "title": "Change Pokemon language",
                 "category": "Pokemon Coding"
+            },
+            {
+                "command": "vscode-pokemon.lineUp",
+                "title": "Line Up / Scatter Pokémon",
+                "category": "Pokemon Coding"
             }
         ],
         "keybindings": [

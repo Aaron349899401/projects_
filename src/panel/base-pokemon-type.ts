@@ -33,6 +33,7 @@ export class InvalidStateError extends Error {
 export abstract class BasePokemonType implements IPokemonType {
   label: string = 'base';
   static count: number = 0;
+  index?: number;
   sequence: ISequenceTree = {
     startingState: States.sitIdle,
     sequenceStates: [],
