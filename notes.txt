@@ -1,0 +1,17 @@
+To code/modify a git repo:
+-----------------------------------------------------------
+1. git clone {https://github.com/jakobhoeg/vscode-pokemon}
+2. cd vscode-pokemon
+3. npm install
+4. code .
+
+
+To Add folder to existing/new git repo:
+-----------------------------------------------------------
+1. go to file explorer, and open terminal (right click on folder)
+2. git init
+3. git remote {"set-url" for existing; "add" for new} origin https://github.com/YourName/YourRepo.git
+4. git add .
+5. git commit -m "Initial commit for {folder}"
+6. git push {-u origin master/main if new}
+# -u sets up the upstream link so futur pushes are easy
