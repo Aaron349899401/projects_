@@ -127,7 +127,7 @@ function startAnimations(
       p.pokemon.nextFrame(); // update movement
     });
     saveState(stateApi);
-  }, 200);
+  }, 300);
 }
 
 function addPokemonToPanel(

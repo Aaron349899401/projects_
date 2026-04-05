@@ -14,4 +14,34 @@ To Add folder to existing/new git repo:
 4. git add .
 5. git commit -m "Initial commit for {folder}"
 6. git push {-u origin master/main if new}
-# -u sets up the upstream link so futur pushes are easy
+# -u sets up the upstream link so futur pushes are easy: remeber this remote/branch for next time/push
+# origin refers to the server (github)
+# remote refers to the repo 
+
+
+To test my extension code:
+-----------------------------------------------------------------------
+1. press F5
+2. open any folder other than the extension folder
+3. Ctrl + Shift + B (choose the npm: compile -vscode/pokemon)
+
+
+To install webpack:
+-----------------------------------------------------------------------
+1. npm install --save-dev webpack webpack-cli
+# this installs webpack (the bundler) and the webpack commmand line interface (webpack-cli)
+
+
+To create launch.json:
+-------------------------------------------------------------------------
+1. Ctrl + Shift + P 
+2. Debug: Open launch.json
+3. choose node.js environment
+
+
+To make changes permanent:
+----------------------------------------------------------------------
+1. vsce package
+2. wait for DONE
+3. in extensions, click ... and "install from VSIX"
+4. install in file explorer
