@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block title %}Add Story{% endblock %}
+
+{% block content %}
+
+<style>
+.form-container {
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+.form-container h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #1a2e24;
+}
+
+.flash-error {
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    background: #fdecea;
+    border-radius: 8px;
+    color: #d32f2f;
+    font-size: 14px;
+    font-weight: 500;
+    animation: flash-in 0.2s ease-out both;
+}
+
+@keyframes flash-in {
+    0%   { opacity: 0; transform: translateY(-6px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+input[type="text"],
+input[type="url"],
+textarea {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s;
+}
+
+input:focus, textarea:focus {
+    border-color: #3a9e72;
+}
+
+textarea {
+    resize: vertical;
+    height: 150px;
+}
+
+.img-tabs {
+    display: flex;
+    margin-bottom: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.img-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: #f6f8f7;
+    color: #6b7f74;
+    border: none;
+    transition: background 0.15s, color 0.15s;
+    font-family: 'DM Sans', sans-serif;
+}
+
+.img-tab.active {
+    background: #2e7d62;
+    color: white;
+}
+
+.img-panel {
+    display: none;
+    margin-bottom: 15px;
+}
+
+.img-panel.active {
+    display: block;
+}
+
+.drop-zone {
+    border: 2px dashed #c5d9d1;
+    border-radius: 10px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #f6f8f7;
+    position: relative;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    border-color: #2e7d62;
+    background: #e8f5ef;
+}
+
+.drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+.drop-zone-text {
+    font-size: 14px;
+    color: #6b7f74;
+}
+
+.drop-zone-text strong {
+    color: #2e7d62;
+}
+
+.preview-wrap {
+    margin-top: 10px;
+    display: none;
+}
+
+.preview-wrap img {
+    max-height: 160px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.preview-name {
+    font-size: 13px;
+    color: #6b7f74;
+    margin-top: 6px;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: #3a9e72;
+    color: white;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+}
+
+.btn-submit:hover {
+    background: #2c7d59;
+}
+</style>
+
+<div class="form-container">
+    <h2>Add a new story</h2>
+
+    {% if error %}
+        <div class="flash-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/add_story" enctype="multipart/form-data">
+
+        <input
+            type="text"
+            name="title"
+            placeholder="Story title"
+            required>
+
+        <textarea
+            name="content"
+            placeholder="Write your story..."
+            required></textarea>
+
+        <div class="img-tabs">
+            <button type="button" class="img-tab active" onclick="switchTab('upload', this)">Upload image</button>
+            <button type="button" class="img-tab" onclick="switchTab('url', this)">Paste URL</button>
+        </div>
+
+        <div class="img-panel active" id="panel-upload">
+            <div class="drop-zone" id="dropZone">
+                <input type="file" name="image_file" accept="image/*" id="fileInput" onchange="previewFile(this)">
+                <div class="drop-zone-text">
+                    <strong>Click to upload</strong> or drag and drop<br>
+                    PNG, JPG, GIF, WEBP
+                </div>
+            </div>
+            <div class="preview-wrap" id="previewWrap">
+                <img id="previewImg" src="">
+                <div class="preview-name" id="previewName"></div>
+            </div>
+        </div>
+
+        <div class="img-panel" id="panel-url">
+            <input
+                type="url"
+                name="image_url"
+                placeholder="https://example.com/image.jpg">
+        </div>
+
+        <button type="submit" class="btn-submit">Publish story</button>
+
+    </form>
+</div>
+
+<script>
+function switchTab(tab, el) {
+    document.querySelectorAll('.img-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.img-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+    el.classList.add('active');
+}
+
+function previewFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('previewImg').src = e.target.result;
+        document.getElementById('previewName').textContent = file.name;
+        document.getElementById('previewWrap').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+const zone = document.getElementById('dropZone');
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', ()  => zone.classList.remove('dragover'));
+zone.addEventListener('drop',      e  => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+        document.getElementById('fileInput').files = e.dataTransfer.files;
+        previewFile(document.getElementById('fileInput'));
+    }
+});
+</script>
+
+{% endblock %}

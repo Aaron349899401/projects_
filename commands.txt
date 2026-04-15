@@ -1,0 +1,12 @@
+npm install -> 
+---------------------------------------------------------------------------------------------------
+- so you don't have to upload like 67,000 lines of other poeples code from packages or dependencies
+- it reads the file named package.json, which contains all of the things you've used.
+- npm install, reads that list, and downloads all those helpers into a folder called node_modules
+- basically so we dont have to write every feature from scratch
+
+code . ->
+---------------------------------------------------------------------------------------------------
+- creates a shortcut to open your current folder in VS code
+- the . in terminal speak means "current directory", so open Vs code right here.
+- "Open VS code and set the current folder as the project workspace"

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<div class="center">
+    <a href="/login">Login</a> |
+    <a href="/register">Create Account</a>
+</div>
+
+{% for story in stories %}
+<div class="card">
+    <h3>{{story['title']}}</h3>
+    <p>{{story['content']}}</p>
+    <small>By {{story['author']}}</small>
+</div>
+{% endfor %}
+
+{% endblock %}

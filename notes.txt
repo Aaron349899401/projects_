@@ -19,7 +19,7 @@ To Add folder to existing/new git repo:
 # remote refers to the repo 
 
 
-To test my extension code:
+To test/edit my extension code:
 -----------------------------------------------------------------------
 1. press F5
 2. open any folder other than the extension folder
@@ -45,3 +45,25 @@ To make changes permanent:
 2. wait for DONE
 3. in extensions, click ... and "install from VSIX"
 4. install in file explorer
+
+
+To fix commit message:
+---------------------------------------------------------------------
+1. git commit --amend -m "correct message"
+
+
+New Branch:
+-------------------------------------------------------------------------
+1. git checkout -b <branch-name>
+
+
+For lazy people:
+--------------------------------------------------------------------
+1. git config --global push.autoSetupRemote true
+
+
+To establish venv:
+---------------------------------------------------------------------
+1. go to vscode temrinal in correct folder
+2. python -m venv venv
+3. .\venv\Scripts\activate

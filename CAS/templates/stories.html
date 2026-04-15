@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% block title %}Stories{% endblock %}
+
+{% block content %}
+
+<style>
+/* COLUMNS */
+.booty-cheeks {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+}
+
+/* ===== ABOUT ===== */
+.about {
+    background: #3a9e72;
+    border-radius: 16px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 28px;
+    margin-right: -20%;
+}
+
+.about-text {
+    padding: 40px 36px;
+    color: white;
+}
+
+.about-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 12px;
+    font-weight: 500;
+}
+
+.about-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    line-height: 1.3;
+    margin-bottom: 14px;
+}
+
+.about-body {
+    font-size: 14px;
+    line-height: 1.7;
+    opacity: 0.88;
+}
+
+.about-values {
+    display: flex;
+    flex-direction: column;
+    background: rgba(0,0,0,0.12);
+}
+
+.value-item {
+    padding: 20px 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    flex: 1;
+}
+
+.value-item:last-child {
+    border-bottom: none;
+}
+
+.value-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.6);
+    flex-shrink: 0;
+    margin-top: 5px;
+}
+
+.value-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: white;
+    margin-bottom: 3px;
+}
+
+.value-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+}
+
+/* ===== HERO ===== */
+.hero {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    margin-bottom: 25px;
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    margin-right: -20%;
+}
+
+.hero img {
+    width: 280px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* ===== SEARCH ===== */
+.search-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    padding: 10px 14px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    margin-bottom: 25px;
+}
+
+.search-wrapper input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 16px;
+    font-family: 'DM Sans', sans-serif;
+}
+
+/* ===== GALLERY ===== */
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+}
+
+/* ===== CARD ===== */
+.card {
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+}
+
+.card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+}
+
+.card-body {
+    padding: 15px;
+}
+
+.card h3 {
+    margin: 0 0 6px 0;
+    font-size: 18px;
+}
+
+.card small {
+    color: gray;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.card button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: #2e7d62;
+    color: white;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+}
+
+/* ===== MODAL ===== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-content {
+    background: white;
+    width: 90%;
+    max-width: 600px;
+    padding: 25px;
+    border-radius: 16px;
+    position: relative;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 22px;
+    cursor: pointer;
+    color: #333;
+}
+
+.modal-title {
+    font-size: 22px;
+    margin-bottom: 15px;
+}
+
+.modal-text {
+    color: #444;
+    line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+    .about {
+        grid-template-columns: 1fr;
+    }
+    .about-values {
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+}
+
+.left-col {
+    width: 260px;
+    flex-shrink: 0;
+    margin-bottom: 25px;
+}
+
+.the-bros {
+    background: #3a9e72;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 24px;
+    gap: 16px;
+    height: 100%;
+    box-sizing: border-box;
+    margin-left: -20%;
+}
+
+.the-bros img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255,255,255,0.4);
+}
+
+.bro-text {
+    text-align: center;
+    color: white;
+}
+
+.bro-label {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.bro-text h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    margin: 0 0 10px 0;
+    color: white;
+}
+
+.bro-text p {
+    font-size: 13px;
+    line-height: 1.7;
+    opacity: 0.88;
+    margin: 0;
+}
+</style>
+
+<div class="booty-cheeks">
+    <!-- LEFT COLUMN -->
+    <div class="left-col">
+        <div class="the-bros">
+            <img src="/static/uploads/image.jpg">
+            <div class="bro-text">
+                <h1> Meet Matthew Wang </h1>
+                <p> He is our founder </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col">
+
+        <!-- ABOUT -->
+        <div class="about">
+            <div class="about-text">
+                <div class="about-label">Our mission</div>
+                <div class="about-heading">A lifetime of wisdom, shared with the world</div>
+                <div class="about-body">
+                    I really like Skibidi Toilet. #OHIO
+                </div>
+            </div>
+            <div class="about-values">
+                <div class="value-item">
+                    <div class="value-dot"></div>
+                    <div>
+                        <div class="value-title">AMONGUS</div>
+                        <div class="value-desc">jjk is kinda buns, arcane is way better</div>
+                    </div>
+                </div>
+                <div class="value-item">
+                    <div class="value-dot"></div>
+                    <div>
+                        <div class="value-title">AMOGUS</div>
+                        <div class="value-desc">suck it lucass bhao</div>
+                    </div>
+                </div>
+                <div class="value-item">
+                    <div class="value-dot"></div>
+                    <div>
+                        <div class="value-title">OHIO</div>
+                        <div class="value-desc">Every story is treated with ohio rizz</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HERO -->
+        <div class="hero">
+            <img src="https://i.pinimg.com/originals/8a/8b/27/8a8b2781551437b052d0ce67c355188e.gif">
+            <div>
+                <h1>Everyone has a story worth sharing</h1>
+                <p>Explore real voices and lived experiences from communities.</p>
+            </div>
+        </div>
+    </div>
+</div> <!-- END OF COLS -->
+
+<!-- SEARCH -->
+<div class="search-wrapper">
+    <span>🔍</span>
+    <input type="text" id="searchInput" placeholder="Search stories..." onkeyup="filterStories()">
+</div>
+
+<!-- GALLERY -->
+<div class="gallery" id="storyGrid">
+{% for story in stories %}
+<div class="card">
+    <img src="{{ story['image'] }}" onerror="this.src='https://via.placeholder.com/300x180?text=No+Image'">
+    <div class="card-body">
+        <h3 class="story-title">{{ story['title'] }}</h3>
+        <small>by {{ story['author'] }}</small>
+        <button
+            class="see-more-btn"
+            data-title="{{ story['title'] }}"
+            data-content="{{ story['content'] }}"
+            data-image="{{ story['image'] }}">
+            See more
+        </button>
+    </div>
+</div>
+{% endfor %}
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="storyModal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <div class="modal-title" id="modalTitle"></div>
+        <img id="modalImage" src="" onerror="this.src='https://via.placeholder.com/300x180?text=No+Image'" style="width:100%;max-height:260px;object-fit:cover;border-radius:10px;margin-bottom:15px;">
+        <div class="modal-text" id="modalText"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("see-more-btn")) {
+        const btn = e.target;
+        document.getElementById("modalTitle").innerText   = btn.dataset.title;
+        document.getElementById("modalText").innerText    = btn.dataset.content;
+        document.getElementById("modalImage").src         = btn.dataset.image;
+        document.getElementById("storyModal").style.display = "flex";
+    }
+});
+
+function filterStories() {
+    let input = document.getElementById("searchInput").value.toLowerCase();
+    document.querySelectorAll(".card").forEach(card => {
+        let title = card.querySelector(".story-title").innerText.toLowerCase();
+        card.style.display = title.includes(input) ? "block" : "none";
+    });
+}
+
+function closeModal() {
+    document.getElementById("storyModal").style.display = "none";
+}
+
+window.onclick = function(e) {
+    let modal = document.getElementById("storyModal");
+    if (e.target === modal) modal.style.display = "none";
+}
+</script>
+
+{% endblock %}
