@@ -1,0 +1,21 @@
+pwd (Print Working Directory): Type this to see exactly which folder you are standing in.
+ls (List): This shows you all the files and folders in your current spot.
+ls -a: This is a "power move." It shows hidden files (anything starting with a dot).
+
+mkdir MyFolder: This makes a new folder (directory) called "MyFolder".
+cd MyFolder: This "Changes Directory" into that folder. Notice your prompt changes to show you’re inside!
+cd ..: This moves you back up one level (out of the folder).
+cd ~: This is the "teleport home" button. It takes you back to your main user folder from anywhere.
+
+touch hello.txt: Creates an empty file named hello.txt.
+echo "Linux is cool" > hello.txt: This takes the text "Linux is cool" and shoves it into the file.
+cat hello.txt: This "catenates" (displays) the content of the file on your screen.
+
+sudo: Short for "Super User Do." It’s like "Right Click > Run as Administrator."
+Example: sudo apt update (This asks the system to check for software updates).
+
+ls /usr/bin | grep "zip": returns ls, but only the files with zip in the name
+btop for cool systmes thingy
+toilet -f big skibid: prints big skibidi
+sl moves train accros screen
+ls /bin | grep "zip" > zip_comands.txt && cat zip_commands.txt

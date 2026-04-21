@@ -1,0 +1,59 @@
+/* ─── HEURISTIC INFERENCE ─── */
+function inferDigit(px) {
+  const total = px.reduce((s, v) => s + v, 0);
+  if (total < 4) return new Array(10).fill(0.1);
+  let cx = 0, cy = 0;
+  const row = new Float32Array(28), col = new Float32Array(28);
+  for (let r = 0; r < 28; r++) for (let c = 0; c < 28; c++) {
+    const v = px[r * 28 + c];
+    cx += c * v; cy += r * v; row[r] += v; col[c] += v;
+  }
+  cx /= total; cy /= total;
+  const q = [0, 0, 0, 0];
+  for (let r = 0; r < 28; r++) for (let c = 0; c < 28; c++) {
+    q[(r < 14 ? 0 : 2) + (c < 14 ? 0 : 1)] += px[r * 28 + c];
+  }
+  let minR = 27, maxR = 0, minC = 27, maxC = 0;
+  for (let r = 0; r < 28; r++) for (let c = 0; c < 28; c++) {
+    if (px[r * 28 + c] > 0.25) {
+      minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+      minC = Math.min(minC, c); maxC = Math.max(maxC, c);
+    }
+  }
+  const ar = (maxC - minC + 1) / Math.max(1, maxR - minR + 1);
+  const area = Math.max(1, (maxR - minR + 1) * (maxC - minC + 1));
+  const dens = total / area;
+  const mH = row[13] + row[14] + row[15]; // middle horizontal band
+  const topH = row.slice(0, 8).reduce((s, v) => s + v, 0);
+  const botH = row.slice(20).reduce((s, v) => s + v, 0);
+  const lV = col.slice(0, 10).reduce((s, v) => s + v, 0);
+  const rV = col.slice(18).reduce((s, v) => s + v, 0);
+  const midV = col.slice(10, 18).reduce((s, v) => s + v, 0);
+
+  const raw = [
+    // 0: loop, balanced quadrants, low mid density
+    0.3 + (1 - Math.abs(dens - 0.48) * 2) * 0.3 + (1 - Math.abs(ar - 0.8) * 1.5) * 0.2 - mH / (total + 1) * 0.4,
+    // 1: narrow, tall, strong vertical center
+    0.2 + (1 - Math.min(1, Math.abs(ar - 0.3) * 3)) * 0.4 + midV / (total + 1) * 0.4 - dens * 0.3,
+    // 2: top-right, bottom-left diagonal, middle stroke
+    0.2 + q[1] / (total / 4 + 1) * 0.25 + q[2] / (total / 4 + 1) * 0.25 + mH / (total / 28 + 1) * 0.01,
+    // 3: right-heavy, middle stroke
+    0.2 + rV / (lV + 1) * 0.3 + mH / (row[14] + 1) * 0.04,
+    // 4: strong middle horizontal, mixed quadrants
+    0.2 + mH / (total / 28 + 1) * 0.05 + (q[0] + q[1]) / (total / 2 + 1) * 0.2,
+    // 5: upper left + lower right
+    0.2 + q[0] / (total / 4 + 1) * 0.25 + q[3] / (total / 4 + 1) * 0.25,
+    // 6: lower loop, bottom-heavy
+    0.2 + botH / (topH + 1) * 0.3 + dens * 0.15,
+    // 7: top heavy, tapering down
+    0.2 + topH / (botH + 1) * 0.3 + (1 - dens) * 0.15,
+    // 8: two loops, dense
+    0.2 + (dens - 0.3) * 0.4 + mH / (total / 28 + 1) * 0.04,
+    // 9: top loop, bottom tail
+    0.2 + q[1] / (total / 4 + 1) * 0.2 + topH / (botH + 1) * 0.2 + rV / (lV + 1) * 0.1,
+  ];
+  const mx = Math.max(...raw);
+  const exp = raw.map(v => Math.exp((v - mx) * 4));
+  const sm = exp.reduce((s, v) => s + v, 0);
+  return exp.map(v => v / sm);
+}

@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MNIST Neural Network Visualizer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #060911;
+  color: #c0cce0;
+  font-family: system-ui, -apple-system, sans-serif;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+#sidebar {
+  width: 196px;
+  min-width: 196px;
+  background: #0a0e1a;
+  border-right: 1px solid #111d2e;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+#sidebar-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  color: #2a4060;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #111d2e;
+}
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+.digit-label {
+  width: 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2a4870;
+  flex-shrink: 0;
+}
+.bar-track {
+  flex: 1;
+  height: 16px;
+  background: #0d1525;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #0d3a7a, #1a6aee);
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bar-fill.winner {
+  background: linear-gradient(90deg, #9a2a00, #ff5910);
+}
+.pct-label {
+  width: 30px;
+  text-align: right;
+  font-size: 10px;
+  color: #2a4060;
+  flex-shrink: 0;
+  transition: color 0.3s;
+}
+.pct-label.winner { color: #ff7a40; }
+#canvas-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+#canvas-wrapper canvas { display: block; }
+#draw-panel {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: rgba(8, 12, 24, 0.92);
+  border: 1px solid #162035;
+  border-radius: 10px;
+  padding: 14px;
+  z-index: 20;
+  backdrop-filter: blur(10px);
+}
+#draw-panel-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #2a4060;
+  margin-bottom: 10px;
+}
+#draw-canvas {
+  display: block;
+  background: #000;
+  border-radius: 5px;
+  border: 1px solid #162035;
+  cursor: crosshair;
+  touch-action: none;
+}
+.btn-row { display: flex; gap: 8px; margin-top: 10px; }
+button {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  border: 1px solid #162035;
+  background: #0d1525;
+  color: #4a6888;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+button:hover { background: #121e30; color: #8aaac8; }
+#btn-predict {
+  background: #0a1e3a;
+  border-color: #1a4a80;
+  color: #3a8ade;
+  font-weight: 600;
+}
+#btn-predict:hover { background: #0d2545; color: #5aaaff; }
+#pred-box {
+  margin-top: 12px;
+  text-align: center;
+  padding: 8px 0 4px;
+  border-top: 1px solid #111d2e;
+}
+#pred-digit {
+  font-size: 40px;
+  font-weight: 700;
+  color: #1e5a9e;
+  line-height: 1;
+  transition: color 0.3s;
+}
+#pred-digit.active { color: #ff6010; }
+#pred-conf { font-size: 10px; color: #2a4060; margin-top: 3px; }
+#hud {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #162035;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div id="sidebar-title">Confidence</div>
+  <div id="bars"></div>
+</div>
+
+<div id="canvas-wrapper">
+  <canvas id="overlay"></canvas>
+
+  <div id="draw-panel">
+    <div id="draw-panel-title">Draw a Digit</div>
+    <canvas id="draw-canvas" width="210" height="210"></canvas>
+    <div class="btn-row">
+      <button id="btn-clear" onclick="clearPad()">Clear</button>
+      <button id="btn-predict" onclick="runInference()">Recognize ↗</button>
+    </div>
+    <div id="pred-box">
+      <div id="pred-digit">?</div>
+      <div id="pred-conf">Draw a digit and click Recognize</div>
+    </div>
+  </div>
+
+  <div id="hud">Drag to orbit · Scroll to zoom · Draw & recognize</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+<script>
+/* ─── PROBABILITY BARS ─── */
+const barsDiv = document.getElementById('bars');
+const fills = [], pctEls = [], digitLabels = [];
+for (let d = 0; d < 10; d++) {
+  const row = document.createElement('div');
+  row.className = 'bar-row';
+  row.innerHTML = `<span class="digit-label">${d}</span>
+    <div class="bar-track"><div class="bar-fill" id="bf${d}"></div></div>
+    <span class="pct-label" id="bp${d}">0%</span>`;
+  barsDiv.appendChild(row);
+  fills.push(document.getElementById('bf' + d));
+  pctEls.push(document.getElementById('bp' + d));
+}
+
+function setBars(probs) {
+  const top = probs.indexOf(Math.max(...probs));
+  probs.forEach((p, i) => {
+    fills[i].style.width = (p * 100).toFixed(1) + '%';
+    fills[i].className = 'bar-fill' + (i === top ? ' winner' : '');
+    pctEls[i].textContent = (p * 100).toFixed(0) + '%';
+    pctEls[i].className = 'pct-label' + (i === top ? ' winner' : '');
+  });
+  const pd = document.getElementById('pred-digit');
+  pd.textContent = top;
+  pd.className = 'active';
+  document.getElementById('pred-conf').textContent =
+    (probs[top] * 100).toFixed(1) + '% confidence';
+}
+
+function getPredictionQuality(probs) {
+  const ranked = probs
+    .map((p, i) => ({ i, p }))
+    .sort((a, b) => b.p - a.p);
+  const top = ranked[0];
+  const second = ranked[1] || { p: 0 };
+  return {
+    digit: top.i,
+    confidence: top.p,
+    margin: top.p - second.p,
+    uncertain: top.p < 0.6 || (top.p - second.p) < 0.2
+  };
+}
+
+/* ─── DRAWING PAD ─── */
+const dc = document.getElementById('draw-canvas');
+const dctx = dc.getContext('2d');
+dctx.fillStyle = '#000';
+dctx.fillRect(0, 0, 210, 210);
+let drawing = false, lx = 0, ly = 0;
+
+function getPos(e) {
+  const r = dc.getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - r.left, y: src.clientY - r.top };
+}
+function startDraw(e) {
+  e.stopPropagation();
+  drawing = true;
+  const p = getPos(e); lx = p.x; ly = p.y;
+}
+function moveDraw(e) {
+  e.stopPropagation();
+  if (!drawing) return;
+  const p = getPos(e);
+  dctx.beginPath(); dctx.moveTo(lx, ly); dctx.lineTo(p.x, p.y);
+  dctx.strokeStyle = '#fff'; dctx.lineWidth = 16;
+  dctx.lineCap = 'round'; dctx.lineJoin = 'round'; dctx.stroke();
+  lx = p.x; ly = p.y;
+  refreshInputTex();
+}
+function endDraw(e) { e.stopPropagation(); drawing = false; }
+
+dc.addEventListener('mousedown', startDraw);
+dc.addEventListener('mousemove', moveDraw);
+dc.addEventListener('mouseup', endDraw);
+dc.addEventListener('mouseleave', endDraw);
+dc.addEventListener('touchstart', e => { e.preventDefault(); startDraw(e); }, { passive: false });
+dc.addEventListener('touchmove', e => { e.preventDefault(); moveDraw(e); }, { passive: false });
+dc.addEventListener('touchend', endDraw);
+
+function clearPad() {
+  dctx.fillStyle = '#000'; dctx.fillRect(0, 0, 210, 210);
+  refreshInputTex();
+  setBars(new Array(10).fill(0.1));
+  document.getElementById('pred-digit').textContent = '?';
+  document.getElementById('pred-digit').className = '';
+  document.getElementById('pred-conf').textContent = 'Draw a digit and click Recognize';
+  resetActivations();
+}
+
+function buildMnistInputCanvas() {
+  const srcW = dc.width;
+  const srcH = dc.height;
+  const src = dctx.getImageData(0, 0, srcW, srcH).data;
+
+  let minX = srcW, minY = srcH, maxX = -1, maxY = -1;
+  for (let y = 0; y < srcH; y++) {
+    for (let x = 0; x < srcW; x++) {
+      const v = src[(y * srcW + x) * 4]; // grayscale in red channel
+      if (v > 20) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  const out = document.createElement('canvas');
+  out.width = 28;
+  out.height = 28;
+  const octx = out.getContext('2d');
+  octx.fillStyle = '#000';
+  octx.fillRect(0, 0, 28, 28);
+
+  // No drawing found, return black input.
+  if (maxX < minX || maxY < minY) return out;
+
+  const boxW = maxX - minX + 1;
+  const boxH = maxY - minY + 1;
+  const target = 20; // MNIST-style content area with margin
+  const scale = Math.min(target / boxW, target / boxH);
+  const drawW = Math.max(1, Math.round(boxW * scale));
+  const drawH = Math.max(1, Math.round(boxH * scale));
+  const dx = Math.floor((28 - drawW) / 2);
+  const dy = Math.floor((28 - drawH) / 2);
+
+  octx.imageSmoothingEnabled = true;
+  octx.drawImage(dc, minX, minY, boxW, boxH, dx, dy, drawW, drawH);
+  return out;
+}
+
+function getPixels28() {
+  const t = buildMnistInputCanvas();
+  const tc = t.getContext('2d');
+  const d = tc.getImageData(0, 0, 28, 28).data;
+  const px = new Float32Array(784);
+  for (let i = 0; i < 784; i++) px[i] = d[i * 4] / 255;
+  return px;
+}
+
+/* ─── TENSORFLOW.JS MNIST MODEL ─── */
+const MNIST_MODEL_URL = 'https://cdn.jsdelivr.net/gh/google/tfjs-mnist-workshop@master/model/model.json';
+let mnistModel = null;
+let mnistModelLoadError = null;
+
+async function loadMnistModel() {
+  if (mnistModel || mnistModelLoadError) return mnistModel;
+  if (typeof tf === 'undefined') {
+    mnistModelLoadError = new Error('TensorFlow.js failed to load');
+    throw mnistModelLoadError;
+  }
+  try {
+    // Warm up: keep UI responsive and avoid multiple concurrent loads.
+    mnistModel = await tf.loadLayersModel(MNIST_MODEL_URL);
+    // Optional warmup to compile kernels.
+    tf.tidy(() => mnistModel.predict(tf.zeros([1, 784])));
+    return mnistModel;
+  } catch (e) {
+    mnistModelLoadError = e;
+    throw e;
+  }
+}
+
+async function inferDigit(px784) {
+  const model = await loadMnistModel();
+  const probs = tf.tidy(() => {
+    const x = tf.tensor2d(px784, [1, 784]); // model expects flattened 28x28
+    const y = model.predict(x);
+    return Array.from(y.dataSync());
+  });
+  // Ensure 10 outputs; fallback if an unexpected model is loaded.
+  if (!Array.isArray(probs) || probs.length !== 10) {
+    throw new Error(`Unexpected model output size: ${probs?.length ?? 'unknown'}`);
+  }
+  return probs;
+}
+
+// Kick off model load early so "Recognize" is fast.
+(() => {
+  const predConf = document.getElementById('pred-conf');
+  const btn = document.getElementById('btn-predict');
+  const prevText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Loading model...';
+  predConf.textContent = 'Loading MNIST model (CDN)...';
+  loadMnistModel()
+    .then(() => {
+      btn.disabled = false;
+      btn.textContent = prevText;
+      predConf.textContent = 'Draw a digit and click Recognize';
+    })
+    .catch(() => {
+      btn.disabled = false;
+      btn.textContent = 'Recognize ↗';
+      predConf.textContent = 'Model load failed (check network / CDN).';
+    });
+})();
+
+
+/* ─── THREE.JS SETUP ─── */
+const wrap = document.getElementById('canvas-wrapper');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x060911);
+scene.fog = new THREE.FogExp2(0x060911, 0.028);
+
+const W = () => wrap.clientWidth, H = () => wrap.clientHeight;
+const camera = new THREE.PerspectiveCamera(42, W() / H(), 0.1, 120);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(W(), H());
+wrap.insertBefore(renderer.domElement, wrap.firstChild);
+
+/* Lights */
+scene.add(new THREE.AmbientLight(0x223355, 1.2));
+const sun = new THREE.DirectionalLight(0x6688cc, 1.5);
+sun.position.set(5, 10, 8); scene.add(sun);
+const warm = new THREE.PointLight(0xff5500, 2, 18);
+warm.position.set(6, 1, 0); scene.add(warm);
+const cool = new THREE.PointLight(0x2255ff, 1, 15);
+cool.position.set(-8, 2, 0); scene.add(cool);
+
+/* Camera orbit */
+let sph = { th: 0.45, ph: 1.05, r: 20 };
+let drag = false, pm = { x: 0, y: 0 };
+function camUpdate() {
+  camera.position.set(
+    sph.r * Math.sin(sph.ph) * Math.sin(sph.th),
+    sph.r * Math.cos(sph.ph),
+    sph.r * Math.sin(sph.ph) * Math.cos(sph.th)
+  );
+  camera.lookAt(0, 0, 0);
+}
+camUpdate();
+
+renderer.domElement.addEventListener('mousedown', e => { drag = true; pm = { x: e.clientX, y: e.clientY }; });
+window.addEventListener('mousemove', e => {
+  if (!drag) return;
+  sph.th -= (e.clientX - pm.x) * 0.007;
+  sph.ph = Math.max(0.15, Math.min(2.8, sph.ph + (e.clientY - pm.y) * 0.007));
+  pm = { x: e.clientX, y: e.clientY }; camUpdate();
+});
+window.addEventListener('mouseup', () => drag = false);
+renderer.domElement.addEventListener('wheel', e => {
+  sph.r = Math.max(7, Math.min(35, sph.r + e.deltaY * 0.018));
+  camUpdate(); e.preventDefault();
+}, { passive: false });
+
+/* ─── NEURAL NETWORK GEOMETRY ─── */
+const LX = [-7.5, -3, 1.2, 5.8]; // x positions per layer
+const SPHERE_BASE = new THREE.SphereGeometry(0.18, 10, 10);
+const OFF = new THREE.Color(0x0a1428);
+const ON_BLUE = new THREE.Color(0x1e7aff);
+const ON_ORG = new THREE.Color(0xff5a10);
+
+function neuronMat() {
+  return new THREE.MeshStandardMaterial({
+    color: OFF.clone(), emissive: OFF.clone(),
+    emissiveIntensity: 0.4, roughness: 0.35, metalness: 0.25
+  });
+}
+
+function makeLayer(count, x, ySpan, zSpan) {
+  const cols = Math.ceil(Math.sqrt(count));
+  const rows = Math.ceil(count / cols);
+  const arr = [];
+  for (let i = 0; i < count; i++) {
+    const ci = i % cols, ri = Math.floor(i / cols);
+    const m = new THREE.Mesh(SPHERE_BASE, neuronMat());
+    m.position.set(
+      x,
+      cols > 1 ? (ci / (cols - 1) - 0.5) * ySpan : 0,
+      rows > 1 ? (ri / (rows - 1) - 0.5) * zSpan : 0
+    );
+    m.userData.act = 0;
+    scene.add(m);
+    arr.push(m);
+  }
+  return arr;
+}
+
+/* Input plane */
+const iPlaneTex = (() => {
+  const c = document.createElement('canvas'); c.width = 28; c.height = 28;
+  const cx = c.getContext('2d'); cx.fillStyle = '#000'; cx.fillRect(0, 0, 28, 28);
+  return new THREE.CanvasTexture(c);
+})();
+const iPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(5.6, 5.6),
+  new THREE.MeshStandardMaterial({
+    map: iPlaneTex,
+    emissive: 0x112233,
+    emissiveIntensity: 0.4,
+    side: THREE.DoubleSide
+  })
+);
+iPlane.position.set(LX[0], 0, 0);
+iPlane.rotation.y = Math.PI / 2;
+scene.add(iPlane);
+
+/* Plane border */
+const bEdge = new THREE.LineSegments(
+  new THREE.EdgesGeometry(new THREE.BoxGeometry(0.04, 5.8, 5.8)),
+  new THREE.LineBasicMaterial({ color: 0x1e4880, transparent: true, opacity: 0.7 })
+);
+bEdge.position.set(LX[0], 0, 0); scene.add(bEdge);
+
+/* Hidden + output layers */
+const H1 = makeLayer(64, LX[1], 5.4, 5.4);
+const H2 = makeLayer(32, LX[2], 4.4, 4.4);
+const OUT = makeLayer(10, LX[3], 0, 5.4);
+OUT.forEach((n, i) => {
+  n.position.set(LX[3], 0, 2.7 - i * 0.6);
+  n.geometry = new THREE.SphereGeometry(0.24, 12, 12);
+});
+
+/* Connection line system */
+let connLines = [];
+function clearConns() { connLines.forEach(l => scene.remove(l)); connLines = []; }
+
+function drawConns(fromLayer, toLayer, minAct = 0.08) {
+  const pairs = [];
+  fromLayer.forEach(f => toLayer.forEach(t => {
+    const s = f.userData.act * t.userData.act;
+    if (s > minAct) pairs.push({ f, t, s });
+  }));
+  pairs.sort((a, b) => b.s - a.s);
+  pairs.slice(0, 180).forEach(({ f, t, s }) => {
+    const pts = [f.position.clone(), t.position.clone()];
+    const col = new THREE.Color().lerpColors(new THREE.Color(0x2b57a8), new THREE.Color(0xff7a2a), s);
+    const v = Math.sqrt(Math.max(0, s)); // lift weak links so output layer remains visible
+    const line = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.2 + v * 0.8 })
+    );
+    scene.add(line); connLines.push(line);
+  });
+}
+
+/* Neuron color update */
+function setAct(neuron, a, isOutput = false) {
+  const col = new THREE.Color().lerpColors(OFF, isOutput ? ON_ORG : ON_BLUE, a);
+  neuron.material.color.set(col);
+  neuron.material.emissive.set(col);
+  neuron.material.emissiveIntensity = 0.3 + a * 1.1;
+  neuron.userData.act = a;
+}
+
+function resetActivations() {
+  [...H1, ...H2, ...OUT].forEach(n => { setAct(n, 0); n.scale.setScalar(1); });
+  clearConns();
+}
+
+/* Input texture refresh */
+function refreshInputTex() {
+  const c = iPlaneTex.image;
+  const cx = c.getContext('2d');
+  const mnistCanvas = buildMnistInputCanvas();
+  cx.clearRect(0, 0, 28, 28);
+  cx.drawImage(mnistCanvas, 0, 0, 28, 28);
+  iPlaneTex.needsUpdate = true;
+}
+
+/* ─── INFERENCE PIPELINE ─── */
+async function runInference() {
+  const px = getPixels28();
+  let probs;
+  try {
+    probs = await inferDigit(px);
+  } catch (e) {
+    setBars(new Array(10).fill(0.1));
+    document.getElementById('pred-digit').textContent = '?';
+    document.getElementById('pred-digit').className = '';
+    document.getElementById('pred-conf').textContent = 'Inference failed (model not available).';
+    resetActivations();
+    return;
+  }
+  refreshInputTex();
+
+  // Animate forward pass with layer delays
+  // H1: derive from pixel local densities
+  H1.forEach((n, i) => {
+    const cr = Math.floor(i / 8), cc = i % 8;
+    const px2 = Math.floor(cc / 8 * 28), py2 = Math.floor(cr / 8 * 28);
+    let s = 0, cnt = 0;
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const nx = px2 + dx, ny = py2 + dy;
+      if (nx >= 0 && nx < 28 && ny >= 0 && ny < 28) { s += px[ny * 28 + nx]; cnt++; }
+    }
+    const act = Math.min(1, s / (cnt + 1) * 2.5 + Math.random() * 0.15);
+    setTimeout(() => setAct(n, act), 80);
+  });
+
+  // H2: mid-level mixing
+  setTimeout(() => {
+    H2.forEach((n, i) => {
+      const act = Math.min(1, probs[i % 10] * 1.4 + Math.random() * 0.2);
+      setAct(n, act);
+    });
+    clearConns(); drawConns(H1, H2);
+  }, 280);
+
+  // Output: use probabilities
+  setTimeout(() => {
+    OUT.forEach((n, i) => {
+      setAct(n, probs[i], true);
+      const s = 0.7 + probs[i] * 1.8;
+      n.scale.setScalar(s);
+    });
+    drawConns(H2, OUT, 0.015);
+    setBars(probs);
+    const q = getPredictionQuality(probs);
+    if (q.uncertain) {
+      const pd = document.getElementById('pred-digit');
+      pd.textContent = '?';
+      pd.className = '';
+      document.getElementById('pred-conf').textContent =
+        `Not sure (${(q.confidence * 100).toFixed(1)}% top match)`;
+    }
+  }, 500);
+}
+
+/* ─── BACKGROUND PARTICLES ─── */
+const PCount = 220;
+const pGeom = new THREE.BufferGeometry();
+const pPos = new Float32Array(PCount * 3);
+const pVel = [];
+for (let i = 0; i < PCount; i++) {
+  pPos[i*3] = (Math.random()-0.5)*26; pPos[i*3+1] = (Math.random()-0.5)*12; pPos[i*3+2] = (Math.random()-0.5)*12;
+  pVel.push({ x: (Math.random()-0.5)*0.004, y: (Math.random()-0.5)*0.004, z: (Math.random()-0.5)*0.004 });
+}
+pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+const pCloud = new THREE.Points(pGeom, new THREE.PointsMaterial({ color: 0x1a3060, size: 0.07, transparent: true, opacity: 0.55 }));
+scene.add(pCloud);
+
+/* Grid */
+const grid = new THREE.GridHelper(28, 28, 0x0b1525, 0x0b1525);
+grid.position.y = -4.5; scene.add(grid);
+
+/* ─── HTML OVERLAY LABELS ─── */
+const overlayEl = document.getElementById('overlay');
+const octx = overlayEl.getContext('2d');
+
+function resizeOverlay() {
+  overlayEl.width = W(); overlayEl.height = H();
+}
+resizeOverlay();
+
+const LAYER_LABELS = [
+  { pos: new THREE.Vector3(LX[0], 3.5, 0), text: 'Input  28×28' },
+  { pos: new THREE.Vector3(LX[1], 3.5, 0), text: 'Hidden 1 · 128' },
+  { pos: new THREE.Vector3(LX[2], 3.5, 0), text: 'Hidden 2 · 64' },
+  { pos: new THREE.Vector3(LX[3], 3.5, 0), text: 'Output · 10' },
+];
+
+function project(v3) {
+  const v = v3.clone().project(camera);
+  return { x: (v.x * 0.5 + 0.5) * W(), y: (-v.y * 0.5 + 0.5) * H() };
+}
+
+function drawOverlay() {
+  octx.clearRect(0, 0, overlayEl.width, overlayEl.height);
+  octx.font = '10px system-ui';
+  octx.letterSpacing = '1.2px';
+  octx.textAlign = 'center';
+
+  LAYER_LABELS.forEach(l => {
+    const p = project(l.pos);
+    octx.fillStyle = 'rgba(30, 55, 90, 0.9)';
+    octx.fillText(l.text.toUpperCase(), p.x, p.y);
+  });
+
+  // Digit labels next to output neurons
+  octx.textAlign = 'left';
+  OUT.forEach((n, i) => {
+    const p = project(n.position);
+    const a = n.userData.act;
+    octx.fillStyle = a > 0.45 ? `rgba(255,${100 - Math.round(a*80)},30,${0.4 + a*0.6})`
+                              : `rgba(30,70,130,${0.4 + a * 0.4})`;
+    octx.font = `${a > 0.5 ? 600 : 400} ${10 + Math.round(a * 4)}px system-ui`;
+    octx.fillText('' + i, p.x + 18, p.y + 4);
+  });
+}
+
+/* ─── ANIMATION LOOP ─── */
+let tick = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  tick += 0.014;
+
+  // Gentle neuron pulse
+  [...H1, ...H2, ...OUT].forEach(n => {
+    if (n.userData.act > 0.05) {
+      const base = n === OUT[0] ? 0.7 + n.userData.act * 1.8 : 1;
+      if (OUT.includes(n)) {
+        n.scale.setScalar((0.7 + n.userData.act * 1.8) * (1 + Math.sin(tick * 2.5 + n.position.z) * 0.04));
+      } else {
+        n.scale.setScalar(1 + Math.sin(tick * 2 + n.position.y * 0.5) * 0.04 * n.userData.act);
+      }
+    }
+  });
+
+  // Sway input plane
+  iPlane.rotation.z = Math.sin(tick * 0.18) * 0.015;
+  warm.position.y = Math.sin(tick * 0.4) * 0.8;
+
+  // Drift particles
+  const pa = pGeom.attributes.position;
+  for (let i = 0; i < PCount; i++) {
+    pa.array[i*3] += pVel[i].x;
+    pa.array[i*3+1] += pVel[i].y;
+    pa.array[i*3+2] += pVel[i].z;
+    if (Math.abs(pa.array[i*3]) > 14) pVel[i].x *= -1;
+    if (Math.abs(pa.array[i*3+1]) > 7) pVel[i].y *= -1;
+    if (Math.abs(pa.array[i*3+2]) > 7) pVel[i].z *= -1;
+  }
+  pa.needsUpdate = true;
+
+  renderer.render(scene, camera);
+
+  if (tick % 0.06 < 0.014) drawOverlay();
+}
+animate();
+
+/* ─── RESIZE ─── */
+window.addEventListener('resize', () => {
+  camera.aspect = W() / H();
+  camera.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+  resizeOverlay();
+});
+</script>
+</body>
+</html>
