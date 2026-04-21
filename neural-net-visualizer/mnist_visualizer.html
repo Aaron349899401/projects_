@@ -384,7 +384,7 @@ async function inferDigit(px784) {
       btn.textContent = prevText;
       predConf.textContent = 'Draw a digit and click Recognize';
     })
-    .catch(() => {
+    .catch(() => { 
       btn.disabled = false;
       btn.textContent = 'Recognize ↗';
       predConf.textContent = 'Model load failed (check network / CDN).';
