@@ -19,3 +19,10 @@ btop for cool systmes thingy
 toilet -f big skibid: prints big skibidi
 sl moves train accros screen
 ls /bin | grep "zip" > zip_comands.txt && cat zip_commands.txt
+
+# remeber to chage the lsd config, caus the file and dir colours became way duller than the regular ls
+# Set lsd as the default for all listing commands
+alias ls='lsd'
+alias ll='lsd -alFh --group-directories-first'
+alias la='lsd -a'
+alias lt='lsd --tree'

@@ -56,3 +56,8 @@ Cost
 - $0 — pure code, pure brainpower
 This project screams “future systems engineer.”
 _____________________________________________________________________________
+
+
+
+- CI/CD pipeline (argo CD)
+- kubernetees controller
